@@ -1,48 +1,49 @@
-import { NextPage } from 'next'
-import { useState, useEffect } from 'react'
-import { Elements } from '@stripe/react-stripe-js'
-import { PaymentIntent } from '@stripe/stripe-js'
-import getStripe from '../utils/get-stripejs'
-import { fetchPostJSON } from '../utils/api-helpers'
-import Layout from '../components/Layout'
-import * as config from '../config'
-import ElementsForm from '../components/ElementsForm'
+import { Elements } from "@stripe/react-stripe-js";
+import { NextPage } from "next";
+import { useState } from "react";
+import CustomDonationInput from "../components/CustomDonationInput";
+import ElementsForm from "../components/ElementsForm";
+import Layout from "../components/Layout";
+import * as config from "../config";
+import getStripe from "../utils/get-stripejs";
 
 const DonatePage: NextPage = () => {
-  const [paymentIntent, setPaymentIntent] = useState<PaymentIntent | null>(null)
-  useEffect(() => {
-    fetchPostJSON('/api/payment_intents', {
-      amount: Math.round(config.MAX_AMOUNT / config.AMOUNT_STEP),
-    }).then((data) => {
-      setPaymentIntent(data)
-    })
-  }, [setPaymentIntent])
+  const [customDonation, setCustomDonation] = useState(
+    Math.round(config.MAX_AMOUNT / config.AMOUNT_STEP)
+  );
+
   return (
     <Layout title="Donate with Elements | Next.js + TypeScript Example">
       <div className="page-container">
         <h1>Donate with Elements</h1>
         <p>Donate to our project 💖</p>
-        {paymentIntent && paymentIntent.client_secret ? (
-          <Elements
-            stripe={getStripe()}
-            options={{
-              appearance: {
-                variables: {
-                  colorIcon: '#6772e5',
-                  fontFamily: 'Roboto, Open Sans, Segoe UI, sans-serif',
-                },
-              },
-              clientSecret: paymentIntent.client_secret,
-            }}
-          >
-            <ElementsForm paymentIntent={paymentIntent} />
-          </Elements>
-        ) : (
-          <p>Loading...</p>
-        )}
+        <CustomDonationInput
+          className="elements-style"
+          name="customDonation"
+          value={customDonation}
+          min={config.MIN_AMOUNT}
+          max={config.MAX_AMOUNT}
+          step={config.AMOUNT_STEP}
+          currency={config.CURRENCY}
+          onChange={(e) => setCustomDonation(Number(e.target.value))}
+        />
+        <Elements
+          stripe={getStripe()}
+          options={{
+            mode: "payment",
+            amount: customDonation,
+            currency: config.CURRENCY,
+            paymentMethodCreation: "manual",
+          }}
+        >
+          <ElementsForm
+            amount={customDonation}
+            confirmUrl="/api/donate/confirm-payment-intent"
+          />
+        </Elements>
       </div>
     </Layout>
-  )
-}
+  );
+};
 
-export default DonatePage
+export default DonatePage;

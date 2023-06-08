@@ -1,20 +1,11 @@
-import { NextPage } from 'next'
-import Link from 'next/link'
-import Layout from '../components/Layout'
+import { NextPage } from "next";
+import Link from "next/link";
+import Layout from "../components/Layout";
 
 const IndexPage: NextPage = () => {
   return (
     <Layout title="Home | Next.js + TypeScript Example">
       <ul className="card-list">
-        <li>
-          <Link
-            href="/donate-with-checkout"
-            className="card checkout-style-background"
-          >
-            <h2 className="bottom">Donate with Checkout</h2>
-            <img src="/checkout-one-time-payments.svg" />
-          </Link>
-        </li>
         <li>
           <Link
             href="/donate-with-elements"
@@ -35,7 +26,7 @@ const IndexPage: NextPage = () => {
         </li>
       </ul>
     </Layout>
-  )
-}
+  );
+};
 
-export default IndexPage
+export default IndexPage;

@@ -1,52 +1,39 @@
-import React, { useState, useEffect } from 'react'
+import React, { useState, useEffect } from "react";
 
-import StripeTestCards from '../components/StripeTestCards'
+import StripeTestCards from "../components/StripeTestCards";
 
-import { useShoppingCart } from 'use-shopping-cart'
-import { fetchPostJSON } from '../utils/api-helpers'
+import { useShoppingCart } from "use-shopping-cart";
+import { fetchPostJSON } from "../utils/api-helpers";
+import { Elements } from "@stripe/react-stripe-js";
+import getStripe from "../utils/get-stripejs";
+import ElementsForm from "./ElementsForm";
+import { CartDetails } from "use-shopping-cart/core";
 
-const CartSummary = () => {
-  const [loading, setLoading] = useState(false)
-  const [cartEmpty, setCartEmpty] = useState(true)
-  const [errorMessage, setErrorMessage] = useState('')
+interface Props {
+  onCheckout: (cartDetails: CartDetails) => void;
+  loading: boolean;
+}
+
+const CartSummary = ({ onCheckout, loading }: Props) => {
+  const [cartEmpty, setCartEmpty] = useState(true);
   const {
     formattedTotalPrice,
     cartCount,
     clearCart,
     cartDetails,
     redirectToCheckout,
-  } = useShoppingCart()
+  } = useShoppingCart();
 
-  useEffect(() => setCartEmpty(!cartCount), [cartCount])
-
-  const handleCheckout: React.FormEventHandler<HTMLFormElement> = async (
-    event
-  ) => {
-    event.preventDefault()
-    setLoading(true)
-    setErrorMessage('')
-
-    const response = await fetchPostJSON(
-      '/api/checkout_sessions/cart',
-      cartDetails
-    )
-
-    if (response.statusCode > 399) {
-      console.error(response.message)
-      setErrorMessage(response.message)
-      setLoading(false)
-      return
-    }
-
-    redirectToCheckout({ sessionId: response.id })
-  }
+  useEffect(() => setCartEmpty(!cartCount), [cartCount]);
 
   return (
-    <form onSubmit={handleCheckout}>
+    <form
+      onSubmit={(event) => {
+        event.preventDefault();
+        if (cartDetails) onCheckout(cartDetails);
+      }}
+    >
       <h2>Cart summary</h2>
-      {errorMessage ? (
-        <p style={{ color: 'red' }}>Error: {errorMessage}</p>
-      ) : null}
       {/* This is where we'll render our cart */}
       <p suppressHydrationWarning>
         <strong>Number of Items:</strong> {cartCount}
@@ -68,11 +55,12 @@ const CartSummary = () => {
         className="cart-style-background"
         type="button"
         onClick={clearCart}
+        disabled={loading}
       >
         Clear Cart
       </button>
     </form>
-  )
-}
+  );
+};
 
-export default CartSummary
+export default CartSummary;
