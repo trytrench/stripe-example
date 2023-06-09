@@ -1,20 +1,15 @@
-import React, { useState, useEffect } from "react";
+import { useEffect, useState } from "react";
 
 import StripeTestCards from "../components/StripeTestCards";
 
 import { useShoppingCart } from "use-shopping-cart";
-import { fetchPostJSON } from "../utils/api-helpers";
-import { Elements } from "@stripe/react-stripe-js";
-import getStripe from "../utils/get-stripejs";
-import ElementsForm from "./ElementsForm";
 import { CartDetails } from "use-shopping-cart/core";
 
 interface Props {
   onCheckout: (cartDetails: CartDetails) => void;
-  loading: boolean;
 }
 
-const CartSummary = ({ onCheckout, loading }: Props) => {
+const CartSummary = ({ onCheckout }: Props) => {
   const [cartEmpty, setCartEmpty] = useState(true);
   const {
     formattedTotalPrice,
@@ -47,7 +42,7 @@ const CartSummary = ({ onCheckout, loading }: Props) => {
       <button
         className="cart-style-background"
         type="submit"
-        disabled={cartEmpty || loading}
+        disabled={cartEmpty}
       >
         Checkout
       </button>
@@ -55,7 +50,6 @@ const CartSummary = ({ onCheckout, loading }: Props) => {
         className="cart-style-background"
         type="button"
         onClick={clearCart}
-        disabled={loading}
       >
         Clear Cart
       </button>

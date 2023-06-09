@@ -1,4 +1,4 @@
-import React, { useState } from "react";
+import React, { useEffect, useState } from "react";
 import PrintObject from "../components/PrintObject";
 import StripeTestCards from "../components/StripeTestCards";
 import * as config from "../config";
@@ -10,6 +10,7 @@ import {
   useElements,
   useStripe,
 } from "@stripe/react-stripe-js";
+import { initialize } from "@trytrench/sdk";
 
 interface Props {
   amount: number;
@@ -22,6 +23,16 @@ const ElementsForm = ({ amount, confirmUrl, clientSecret }: Props) => {
   const [errorMessage, setErrorMessage] = useState("");
   const stripe = useStripe();
   const elements = useElements();
+
+  useEffect(() => {
+    if (clientSecret)
+      initialize(
+        process.env.NEXT_PUBLIC_TRENCH_API_URL as string,
+        clientSecret.split("_secret")[0]
+      ).catch((error) => {
+        console.error(error);
+      });
+  }, [clientSecret]);
 
   const PaymentStatus = ({ status }: { status: string }) => {
     switch (status) {

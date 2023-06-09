@@ -26,7 +26,25 @@ export default async function handler(
   }
 
   try {
-    const paymentIntentId = clientSecret.split("_secret_")[0];
+    const paymentIntentId = clientSecret.split("_secret")[0];
+    const response = await fetch(
+      `${process.env.NEXT_PUBLIC_TRENCH_API_URL}/payment/assess`,
+      {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+          "x-api-key": process.env.TRENCH_API_KEY as string,
+        },
+        body: JSON.stringify({ paymentIntentId, paymentMethodId }),
+      }
+    );
+    const data: { riskLevel: string } = await response.json();
+
+    if (data.riskLevel === "VeryHigh") {
+      return res.status(500).json({
+        statusCode: 500,
+      });
+    }
 
     const intent = await stripe.paymentIntents.confirm(paymentIntentId, {
       payment_method: paymentMethodId,
