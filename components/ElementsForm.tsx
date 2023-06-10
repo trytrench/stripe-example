@@ -11,6 +11,7 @@ import {
   useStripe,
 } from "@stripe/react-stripe-js";
 import { initialize } from "@trytrench/sdk";
+import axios from "axios";
 
 interface Props {
   amount: number;
@@ -96,30 +97,37 @@ const ElementsForm = ({ amount, confirmUrl, clientSecret }: Props) => {
       }
 
       // Create a PaymentIntent with the specified amount.
-      const response = await fetchPostJSON(confirmUrl, {
-        paymentMethodId: paymentMethod.id,
-        amount,
-        clientSecret,
-      });
-      console.log(response);
-      if (response.error) {
-        setPayment({ status: "error" });
-        setErrorMessage(response.error.message ?? "An unknown error occurred");
-      } else if (response.status === "requires_action") {
-        // Use Stripe.js to handle the required next action
-        const { error } = await stripe.handleNextAction({
-          clientSecret: response.clientSecret,
+      try {
+        const { data } = await axios.post<{
+          clientSecret: string;
+          status: string;
+        }>(confirmUrl, {
+          paymentMethodId: paymentMethod.id,
+          amount,
+          clientSecret,
         });
 
-        if (error) {
-          setPayment({ status: "error" });
-          setErrorMessage(error.message ?? "An unknown error occurred");
+        if (data.status === "requires_action") {
+          // Use Stripe.js to handle the required next action
+          const { error } = await stripe.handleNextAction({
+            clientSecret: data.clientSecret,
+          });
+
+          if (error) {
+            setPayment({ status: "error" });
+            setErrorMessage(error.message ?? "An unknown error occurred");
+          } else {
+            // Actions handled, show success message
+            setPayment({ status: "succeeded" });
+          }
         } else {
-          // Actions handled, show success message
           setPayment({ status: "succeeded" });
         }
-      } else {
-        setPayment({ status: "succeeded" });
+      } catch (error) {
+        setPayment({ status: "error" });
+        setErrorMessage(
+          error.response?.data?.message ?? "An unknown error occurred"
+        );
       }
     } catch (error) {
       setPayment({ status: "error" });

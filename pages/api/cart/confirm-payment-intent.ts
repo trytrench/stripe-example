@@ -1,3 +1,4 @@
+import { StripeError } from "@stripe/stripe-js";
 import { NextApiRequest, NextApiResponse } from "next";
 
 import Stripe from "stripe";
@@ -25,8 +26,10 @@ export default async function handler(
     return;
   }
 
+  const paymentIntentId = clientSecret.split("_secret")[0];
+
+  // Assess payment
   try {
-    const paymentIntentId = clientSecret.split("_secret")[0];
     const response = await fetch(
       `${process.env.NEXT_PUBLIC_TRENCH_API_URL}/payment/assess`,
       {
@@ -38,14 +41,31 @@ export default async function handler(
         body: JSON.stringify({ paymentIntentId, paymentMethodId }),
       }
     );
-    const data: { riskLevel: string } = await response.json();
+    if (!response.ok) throw new Error("Something went wrong.");
+
+    const data: { riskLevel: string; paymentAttemptId: string } =
+      await response.json();
+
+    // Attach the paymentAttemptId to the payment intent
+    await stripe.paymentIntents.update(paymentIntentId, {
+      metadata: { paymentAttemptId: data.paymentAttemptId },
+    });
 
     if (data.riskLevel === "VeryHigh") {
-      return res.status(500).json({
-        statusCode: 500,
-      });
+      res
+        .status(400)
+        .json({ statusCode: 400, message: "Your card was declined" });
+      return;
     }
+  } catch (error) {
+    res.status(500).json({
+      statusCode: 500,
+      message: error.message,
+    });
+    return;
+  }
 
+  try {
     const intent = await stripe.paymentIntents.confirm(paymentIntentId, {
       payment_method: paymentMethodId,
       return_url: "http://localhost:3000/use-shopping-cart",
@@ -65,10 +85,13 @@ export default async function handler(
       clientSecret: intent.client_secret,
       status: intent.status,
     });
-  } catch (err) {
-    res.status(500).json({
-      statusCode: 500,
-      error: err,
-    });
+  } catch (error) {
+    if (error.type === "StripeCardError") {
+      res.status(400).json({ statusCode: 400, message: error.message });
+    } else {
+      res
+        .status(500)
+        .json({ statusCode: 500, message: "Something went wrong." });
+    }
   }
 }

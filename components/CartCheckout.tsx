@@ -2,8 +2,8 @@ import { Elements } from "@stripe/react-stripe-js";
 import { useEffect, useState } from "react";
 import { useShoppingCart } from "use-shopping-cart";
 import ElementsForm from "../components/ElementsForm";
-import { fetchPostJSON } from "../utils/api-helpers";
 import getStripe from "../utils/get-stripejs";
+import axios from "axios";
 
 const CartCheckout = () => {
   const [clientSecret, setClientSecret] = useState<string | null>(null);
@@ -17,22 +17,21 @@ const CartCheckout = () => {
     setLoading(true);
     setErrorMessage("");
 
-    const response = await fetchPostJSON(
-      "/api/cart/create-payment-intent",
-      cartDetails
-    );
+    try {
+      const { data } = await axios.post<{
+        amount: number;
+        clientSecret: string;
+      }>("/api/cart/create-payment-intent", cartDetails);
 
-    if (response.statusCode === 500) {
-      console.error(response.message);
-      setErrorMessage(response.error.message);
+      setAmount(data.amount / 100);
+      setClientSecret(data.clientSecret);
+
+      setLoading(false);
+    } catch (error) {
+      setErrorMessage(error.response?.data?.message || "Something went wrong.");
       setLoading(false);
       return;
     }
-
-    setAmount(response.amount / 100);
-    setClientSecret(response.clientSecret);
-
-    setLoading(false);
   };
 
   useEffect(() => {
