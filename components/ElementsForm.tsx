@@ -2,7 +2,6 @@ import React, { useEffect, useState } from "react";
 import PrintObject from "../components/PrintObject";
 import StripeTestCards from "../components/StripeTestCards";
 import * as config from "../config";
-import { fetchPostJSON } from "../utils/api-helpers";
 import { formatAmountForDisplay } from "../utils/stripe-helpers";
 import {
   AddressElement,
@@ -12,54 +11,27 @@ import {
 } from "@stripe/react-stripe-js";
 import { initialize } from "@trytrench/sdk";
 import axios from "axios";
+import PaymentStatus from "./PaymentStatus";
 
 interface Props {
   amount: number;
-  confirmUrl: string;
-  clientSecret?: string;
+  clientSecret: string;
 }
 
-const ElementsForm = ({ amount, confirmUrl, clientSecret }: Props) => {
+const ElementsForm = ({ amount, clientSecret }: Props) => {
   const [payment, setPayment] = useState({ status: "initial" });
   const [errorMessage, setErrorMessage] = useState("");
   const stripe = useStripe();
   const elements = useElements();
 
   useEffect(() => {
-    if (clientSecret)
-      initialize(
-        process.env.NEXT_PUBLIC_TRENCH_API_URL as string,
-        clientSecret.split("_secret")[0]
-      ).catch((error) => {
-        console.error(error);
-      });
+    initialize(
+      process.env.NEXT_PUBLIC_TRENCH_API_URL as string,
+      clientSecret.split("_secret")[0]
+    ).catch((error) => {
+      console.error(error);
+    });
   }, [clientSecret]);
-
-  const PaymentStatus = ({ status }: { status: string }) => {
-    switch (status) {
-      case "processing":
-      case "requires_payment_method":
-      case "requires_confirmation":
-        return <h2>Processing...</h2>;
-
-      case "requires_action":
-        return <h2>Authenticating...</h2>;
-
-      case "succeeded":
-        return <h2>Payment Succeeded 🥳</h2>;
-
-      case "error":
-        return (
-          <>
-            <h2>Error 😭</h2>
-            <p className="error-message">{errorMessage}</p>
-          </>
-        );
-
-      default:
-        return null;
-    }
-  };
 
   const handleSubmit: React.FormEventHandler<HTMLFormElement> = async (e) => {
     // We don't want to let default form submission happen here,
@@ -98,20 +70,17 @@ const ElementsForm = ({ amount, confirmUrl, clientSecret }: Props) => {
 
       // Create a PaymentIntent with the specified amount.
       try {
-        const { data } = await axios.post<{
-          clientSecret: string;
-          status: string;
-        }>(confirmUrl, {
-          paymentMethodId: paymentMethod.id,
-          amount,
-          clientSecret,
-        });
+        const { data } = await axios.post<{ status: string }>(
+          "/api/cart/confirm-payment-intent",
+          {
+            paymentMethodId: paymentMethod.id,
+            clientSecret,
+          }
+        );
 
         if (data.status === "requires_action") {
           // Use Stripe.js to handle the required next action
-          const { error } = await stripe.handleNextAction({
-            clientSecret: data.clientSecret,
-          });
+          const { error } = await stripe.handleNextAction({ clientSecret });
 
           if (error) {
             setPayment({ status: "error" });
@@ -156,7 +125,7 @@ const ElementsForm = ({ amount, confirmUrl, clientSecret }: Props) => {
           Pay {formatAmountForDisplay(amount, config.CURRENCY)}
         </button>
       </form>
-      <PaymentStatus status={payment.status} />
+      <PaymentStatus status={payment.status} errorMessage={errorMessage} />
       <PrintObject content={payment} />
     </>
   );

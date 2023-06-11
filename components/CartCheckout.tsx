@@ -50,11 +50,7 @@ const CartCheckout = () => {
       stripe={getStripe()}
       options={{ clientSecret, paymentMethodCreation: "manual" }}
     >
-      <ElementsForm
-        amount={amount}
-        confirmUrl="/api/cart/confirm-payment-intent"
-        clientSecret={clientSecret}
-      />
+      <ElementsForm amount={amount} clientSecret={clientSecret} />
     </Elements>
   );
 };

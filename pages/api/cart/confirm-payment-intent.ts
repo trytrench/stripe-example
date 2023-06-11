@@ -1,4 +1,3 @@
-import { StripeError } from "@stripe/stripe-js";
 import { NextApiRequest, NextApiResponse } from "next";
 
 import Stripe from "stripe";
@@ -81,10 +80,7 @@ export default async function handler(
       },
     });
 
-    res.status(200).json({
-      clientSecret: intent.client_secret,
-      status: intent.status,
-    });
+    res.status(200).json({ status: intent.status });
   } catch (error) {
     if (error.type === "StripeCardError") {
       res.status(400).json({ statusCode: 400, message: error.message });

@@ -8,15 +8,6 @@ const IndexPage: NextPage = () => {
       <ul className="card-list">
         <li>
           <Link
-            href="/donate-with-elements"
-            className="card elements-style-background"
-          >
-            <h2 className="bottom">Donate with Elements</h2>
-            <img src="/elements-card-payment.svg" />
-          </Link>
-        </li>
-        <li>
-          <Link
             href="/use-shopping-cart"
             className="card cart-style-background"
           >
